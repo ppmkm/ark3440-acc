@@ -10,6 +10,7 @@ Files: `ark3440_ssd_bracket.scad` (parametric source), `ark3440_ssd_bracket.stl`
 | Item | Value |
 |---|---|
 | Plate | 107.05 x 80 x 3 mm, R5 corners; extends 7.05 mm beyond drive front face |
+| Cooling window | 52.75 x 47.31 mm, R4, X 21.20 .. 73.95 mm from drive front face; auto-sized for 4 mm web to countersinks / stud bases (`window`, `win_web`, `win_r`) |
 | Drive holes | 4x M3 clearance 3.4 mm, 90 deg countersink 6.4 mm, from stud side |
 | Studs | 4x, rectangular pattern 85 mm along drive x 70 mm across |
 | Stud X positions | -2.05 and 82.95 mm from drive front face (end opposite SATA connector) |

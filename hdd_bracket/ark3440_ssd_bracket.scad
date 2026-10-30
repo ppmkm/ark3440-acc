@@ -24,6 +24,11 @@ plate_t      = 3.00;
 plate_r      = 5.00;        // corner radius
 plate_margin = 0.00;        // extra beyond drive / stud outline, per side
 
+/* [Cooling window] */
+window   = true;
+win_web  = 4.0;             // min material between window and countersink / stud base
+win_r    = 4.0;             // window corner radius
+
 /* [Studs] */
 stud_pitch_x = 85.0;        // along drive length
 stud_pitch_y = 70.0;        // across drive width
@@ -70,6 +75,20 @@ pw  = max(drive_w, spy + s1_d) + 2*plate_margin;
 plate_l = px1 - px0;
 plate_w = pw;
 
+// window = largest centred rectangle clear of countersinks and stud bases by win_web
+feats = concat([for (h = holes) [h[0], h[1], csk_d/2]],
+               [for (p = studs) [p[0], p[1], s1_d/2]]);
+xc  = drive_l/2;
+wx0 = max([for (f = feats) if (f[0] < xc) f[0] + f[2]]) + win_web;
+wx1 = min([for (f = feats) if (f[0] > xc) f[0] - f[2]]) - win_web;
+wy  = min([for (f = feats) abs(f[1]) - f[2]]) - win_web;
+
+module window_cut() {
+    translate([wx0, -wy, -1]) linear_extrude(plate_t + 2)
+        translate([win_r, win_r]) offset(r = win_r)
+            square([wx1 - wx0 - 2*win_r, 2*wy - 2*win_r]);
+}
+
 module plate() {
     translate([px0, -pw/2, 0]) linear_extrude(plate_t)
         translate([plate_r, plate_r]) offset(r = plate_r)
@@ -105,6 +124,7 @@ difference() {
         for (p = studs) translate([p[0], p[1], plate_t - 0.01]) stud();
     }
     for (p = holes) translate([p[0], p[1], 0]) screw_hole();
+    if (window) window_cut();
 }
 
 // ghost drive (F5 preview only)
@@ -115,6 +135,7 @@ min_gap = min([for (h = holes, s = studs) norm(h - s) - csk_d/2 - s1_d/2]);
 echo(str("Plate L x W x T        = ", plate_l, " x ", plate_w, " x ", plate_t, " mm"));
 echo(str("Stud pattern X x Y     = ", spx, " x ", spy, " mm"));
 echo(str("Studs X from drive front = ", sx0, ", ", sx0 + spx, " mm; plate X = ", px0, " .. ", px1, " mm"));
+if (window) echo(str("Cooling window         = ", wx1 - wx0, " x ", 2*wy, " mm, X ", wx0, " .. ", wx1));
 echo(str("Overall height         = ", plate_t + s1_h + s2_h + s3_h, " mm"));
 echo(str("Min csk-to-stud gap    = ", min_gap, " mm"));
 assert(min_gap >= stud_gap - 1e-6, "Drive screw countersink collides with stud base");
