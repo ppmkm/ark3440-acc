@@ -1,49 +1,49 @@
-# ARK-3440 internal 2.5" SSD tray
+# ARK-3440 internal 2.5" SSD bracket
 
-Printable carrier for the internal fixed drive position of the Advantech ARK-3440
-(drive screwed to the bottom cover, PCB side towards the cover, thermal pad on cover;
-user manual sec. 2.6.1). Sized for Goodram CX400 gen.2 512 GB (SSDPR-CX400-512-G2),
-100.00 x 69.85 x 7.00 mm.
+Flat plate carrying a 2.5" SSD on 4 snap-in studs for rubber shock absorbers (grommets).
+Sized for Goodram CX400 gen.2 512 GB (SSDPR-CX400-512-G2), 100.00 x 69.85 x 7.00 mm.
 
-Files: `ark3440_ssd_tray.scad` (parametric source), `ark3440_ssd_tray.stl`, `preview.png`
-(transparent block = drive).
+Files: `ark3440_ssd_bracket.scad` (parametric source), `ark3440_ssd_bracket.stl`,
+`preview.png` (stud side; grey block = drive).
 
 ## Geometry
 | Item | Value |
 |---|---|
-| Tray outline | 102.6 x 74.45 x 7.1 mm |
-| Floor | 1.6 mm, window ~60 x 52 mm for thermal pad |
-| Side walls | 2.0 mm, 4x M3 side holes, 0.8 mm counterbore |
-| Drive top above cover | 8.6 mm (internal limit 12.8 mm per A2 datasheet) |
-| Connector end | open, floor edge chamfered for cable bend |
+| Plate | 100 x 95 x 3 mm, R5 corners |
+| Drive holes | 4x M3 clearance 3.4 mm, 90 deg countersink 6.4 mm, from stud side |
+| Studs | 4x, rectangular pattern 85 x 70 mm, centred on drive |
+| Stud section 1 (base) | dia 10.0, h 6.5 |
+| Stud section 2 (neck) | dia 5.0, h 6.5, split |
+| Stud section 3 (lock) | half-sphere dia 7.0 flattened to h 3.0, split |
+| Split | 1.2 mm vertical slot through sections 2+3 (`slot_w`, `slot_angle`) |
+| Overall height | 19.0 mm (plate + stud) |
+
+## Stud pattern orientation
+The 85 mm pitch runs across the drive width (Y), 70 mm along the length (X)
+(`long_across_width = true`). With the opposite orientation each stud base (dia 10) overlaps a
+drive screw countersink by 3.6 mm; the model aborts with an assertion in that case.
 
 ## Assumptions - verify before printing
-1. **Hole pattern** uses SFF-8201 values from memory, not from the standard text:
-   side holes 14.00 / 90.60 mm from front face, 3.00 mm above bottom; bottom holes
-   4.07 mm from side edges (61.71 mm pitch) at 14.00 / 90.60 mm. Measure the CX400 with
-   calipers and edit `side_hole_x`, `side_hole_z`, `bot_hole_x`, `bot_hole_y`.
-2. **Cover holes coincide with the drive bottom holes** (stock screws go cover -> drive).
-   Not confirmed by any drawing. If they do not, set `cover_through = false` and fix the
-   tray to the cover otherwise.
-3. Free space around the drive on the cover is unknown; tray adds 2.3 mm per side in Y
-   and 2.0 mm at the front end. Check for bosses/ribs; reduce `wall_t` or disable
-   `end_stop` if needed.
+1. Drive bottom holes: 61.71 mm across, 76.60 mm along, first hole 14.00 mm from the front face
+   (end opposite the SATA connector). These are recalled SFF-8201 values, not taken from the
+   standard. Measure the drive and edit `bot_hole_*`.
+2. The stud pattern is centred on the drive.
+3. Studs point away from the drive; the drive face of the plate is flat.
 
 ## Assembly
-1. Drive into tray, label/PCB side down, SATA connector at the open end.
-2. 4x M3 x 4 side screws (max 3 mm thread into drive).
-3. Thermal pad on cover; thickness >= 2.0 mm (floor 1.6 + 0.4 compression) so it reaches
-   the drive through the window.
-4. Cover screws: stock length + 1.6 mm (e.g. M3 x 4 -> M3 x 6 if the stock are M3 x 4);
-   do not exceed 3 mm engagement in the drive bottom threads.
+1. Drive against flat face of plate, 4x M3 x 6 countersunk (ISO 10642 / 7046) from the stud
+   side: 3 mm thread engagement into drive.
+2. Press studs into grommets; split halves close while the dia 7 head passes through, then spring back.
 
 ## Print
-- Material: PETG, ASA or PC. Not PLA: fanless enclosure interior can exceed its ~55 C
-  softening point.
-- Floor down, no supports. 0.2 mm layers, >= 4 perimeters, 40 % infill.
-- Check hole diameters after printing; ream to 3.4 mm if undersized.
+- Material: PETG, ASA or PC (not PLA: enclosure interior can exceed ~55 C).
+- Orientation as modelled: drive face on bed, studs up, no supports
+  (head underside overhang 1 mm radial).
+- 0.2 mm layers or finer on studs, >= 3 perimeters, 100 % infill on studs
+  (neck halves are 1.9 mm wide). Neck strength across layer lines is the weak point; if studs
+  break, increase `s2_d` / reduce `slot_w`, or print the plate on edge.
 
 ## Regenerate
 ```
-openscad -o ark3440_ssd_tray.stl ark3440_ssd_tray.scad
+openscad -o ark3440_ssd_bracket.stl ark3440_ssd_bracket.scad
 ```
