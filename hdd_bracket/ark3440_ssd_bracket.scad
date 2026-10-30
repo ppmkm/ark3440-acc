@@ -3,7 +3,8 @@
 // Drive is screwed to the plate through its 4 bottom holes (countersunk M3 from stud side).
 // Studs snap into rubber shock absorbers (grommets) in the chassis.
 //
-// Frame: X = drive length (0 = plate centre), Y = drive width,
+// Frame: X = drive length (0 = drive front face, end opposite SATA connector),
+//        Y = drive width (0 = drive centreline),
 //        Z = up; Z = 0 is the drive-side face of the plate, studs point +Z.
 // Print as modelled: drive face on the bed, studs up, no supports.
 // All dimensions in mm.
@@ -24,10 +25,16 @@ plate_r      = 5.00;        // corner radius
 plate_margin = 0.00;        // extra beyond drive / stud outline, per side
 
 /* [Studs] */
-stud_pitch_long  = 85.0;    // rectangular pattern
-stud_pitch_short = 70.0;
-long_across_width = true;   // true: 85 across drive width (Y), 70 along length (X)
-                            // false: 85 along X - base collides with drive screw heads
+stud_pitch_x = 85.0;        // along drive length
+stud_pitch_y = 70.0;        // across drive width
+// Stud pattern shift along X relative to the drive holes. A centred pattern puts the
+// dia 10 bases on the drive screw countersinks, so the pattern is shifted:
+//   "front": overhangs the front face (connector end left clear)  - default
+//   "back" : overhangs the SATA connector end
+//   "manual": first stud at stud_x_manual from the drive front face
+stud_shift    = "front";
+stud_x_manual = -2.05;
+stud_gap      = 0.5;        // min clearance stud base to countersink edge
 s1_d = 10.0;  s1_h = 6.5;   // base
 s2_d =  5.0;  s2_h = 6.5;   // neck (sits in grommet)
 s3_d =  7.0;  s3_h = 3.0;   // locking half-sphere (flattened to s3_h)
@@ -42,18 +49,29 @@ csk_ang  = 90;
 $fn = 64;
 
 // derived
-spx = long_across_width ? stud_pitch_short : stud_pitch_long;
-spy = long_across_width ? stud_pitch_long  : stud_pitch_short;
-plate_l = max(drive_l, spx + s1_d) + 2*plate_margin;
-plate_w = max(drive_w, spy + s1_d) + 2*plate_margin;
-// drive centred on plate; holes relative to drive centre
-hx0 = -drive_l/2 + bot_hole_front;
+spx = stud_pitch_x;
+spy = stud_pitch_y;
+hx0 = bot_hole_front;
 holes = [for (x = [hx0, hx0 + bot_hole_pitch_x], y = [-1, 1]) [x, y*bot_hole_pitch_y/2]];
-studs = [for (x = [-1, 1], y = [-1, 1]) [x*spx/2, y*spy/2]];
+// min X offset stud-to-hole so base clears countersink
+dy_sh  = abs(spy - bot_hole_pitch_y)/2;
+r_need = s1_d/2 + csk_d/2 + stud_gap;
+dx_min = r_need > dy_sh ? sqrt(r_need*r_need - dy_sh*dy_sh) : 0;
+dpitch = spx - bot_hole_pitch_x;
+sx0 = stud_shift == "front" ? hx0 - max(dx_min, dpitch + dx_min)
+    : stud_shift == "back"  ? hx0 + dx_min
+    : stud_x_manual;
+studs = [for (x = [sx0, sx0 + spx], y = [-1, 1]) [x, y*spy/2]];
 csk_depth = (csk_d - m3_clear)/2 / tan(csk_ang/2);
+// plate = hull of drive outline and stud bases
+px0 = min(0, sx0 - s1_d/2) - plate_margin;
+px1 = max(drive_l, sx0 + spx + s1_d/2) + plate_margin;
+pw  = max(drive_w, spy + s1_d) + 2*plate_margin;
+plate_l = px1 - px0;
+plate_w = pw;
 
 module plate() {
-    translate([-plate_l/2, -plate_w/2, 0]) linear_extrude(plate_t)
+    translate([px0, -pw/2, 0]) linear_extrude(plate_t)
         translate([plate_r, plate_r]) offset(r = plate_r)
             square([plate_l - 2*plate_r, plate_w - 2*plate_r]);
 }
@@ -90,12 +108,13 @@ difference() {
 }
 
 // ghost drive (F5 preview only)
-%translate([-drive_l/2, -drive_w/2, -drive_h]) cube([drive_l, drive_w, drive_h]);
+%translate([0, -drive_w/2, -drive_h]) cube([drive_l, drive_w, drive_h]);
 
 // clearance check: countersink edge to stud base
 min_gap = min([for (h = holes, s = studs) norm(h - s) - csk_d/2 - s1_d/2]);
 echo(str("Plate L x W x T        = ", plate_l, " x ", plate_w, " x ", plate_t, " mm"));
 echo(str("Stud pattern X x Y     = ", spx, " x ", spy, " mm"));
+echo(str("Studs X from drive front = ", sx0, ", ", sx0 + spx, " mm; plate X = ", px0, " .. ", px1, " mm"));
 echo(str("Overall height         = ", plate_t + s1_h + s2_h + s3_h, " mm"));
 echo(str("Min csk-to-stud gap    = ", min_gap, " mm"));
-assert(min_gap > 0.5, "Drive screw countersink collides with stud base");
+assert(min_gap >= stud_gap - 1e-6, "Drive screw countersink collides with stud base");
